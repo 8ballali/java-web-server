@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 
 import java.io.*;
 import java.nio.file.*;
@@ -53,7 +54,7 @@ public class HelloController {
 
     @FXML
     public void dirButtonOnAction(ActionEvent event) {
-        chooseDirectory("Choose Directory", dirTextField);
+        chooseFileOrDirectory("Choose Directory or Root HTML File", dirTextField);
     }
 
     @FXML
@@ -179,6 +180,39 @@ public class HelloController {
         File selectedDirectory = directoryChooser.showDialog(null);
         if (selectedDirectory != null) {
             textField.setText(selectedDirectory.getAbsolutePath());
+        }
+    }
+    private void chooseFileOrDirectory(String title, TextField textField) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+
+        // Set up extension filters for HTML files and all files
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("HTML Files", "*.html"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+
+        // Show file chooser dialog to select a file
+        File selectedFile = fileChooser.showOpenDialog(null);
+
+        if (selectedFile != null) {
+            if (selectedFile.isDirectory()) {
+                // If a directory is selected, set the text field with the directory path
+                textField.setText(selectedFile.getAbsolutePath());
+            } else {
+                // If a file is selected, check if it's an HTML file
+                String filePath = selectedFile.getAbsolutePath();
+                if (filePath.toLowerCase().endsWith(".html")) {
+                    // If it's an HTML file, set the text field with the file path
+                    textField.setText(filePath);
+                } else {
+                    // Otherwise, prompt to choose a directory
+                    chooseDirectory(title, textField);
+                }
+            }
+        } else {
+            // If no file is selected, prompt to choose a directory
+            chooseDirectory(title, textField);
         }
     }
 
