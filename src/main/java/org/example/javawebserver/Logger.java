@@ -17,20 +17,20 @@ public class Logger {
         String clientIP = exchange.getRemoteAddress().getAddress().getHostAddress();
         String requestMethod = exchange.getRequestMethod();
         String requestPath = exchange.getRequestURI().getPath();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
         String formattedDate = dateFormat.format(new Date());
 
         String logEntry;
-        Path filePath = Paths.get(HelloController.WEB_DIR, requestPath).normalize().toAbsolutePath();
-        if (!filePath.startsWith(Paths.get(HelloController.WEB_DIR).toAbsolutePath()) || !Files.exists(filePath)) {
-            logEntry = String.format("%s | %s | localhost:%d%s | %s | 404 Not Found\n",
-                    formattedDate, requestMethod, HelloController.PORT, requestPath, clientIP);
+        Path logFilePath = Paths.get(HelloController.LOG_PATH, "access.log");
+        Files.createDirectories(logFilePath.getParent());
+
+        if (!Files.exists(Paths.get(HelloController.WEB_DIR, requestPath))) {
+            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + clientIP + " | 404 Not Found\n";
         } else {
-            logEntry = String.format("%s | %s | localhost:%d%s | %s\n",
-                    formattedDate, requestMethod, HelloController.PORT, requestPath, clientIP);
+            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + clientIP + "\n";
         }
 
-        Path logFilePath = Paths.get(HelloController.LOG_PATH, LOG_FILE_NAME);
-        Files.createDirectories(logFilePath.getParent());
         Files.write(logFilePath, logEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
     }
 
