@@ -14,7 +14,7 @@ public class MyHandler implements HttpHandler {
     public MyHandler(String webDir) {
         this.webDir = webDir;
     }
-
+    //to check request
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String requestMethod = exchange.getRequestMethod();
@@ -45,7 +45,7 @@ public class MyHandler implements HttpHandler {
             e.printStackTrace();
         }
     }
-
+    // Digunakan untuk menampilkan daftar file dalam direktori
     private void serveDirectoryListing(HttpExchange exchange, Path directoryPath) throws IOException {
         StringBuilder htmlBuilder = new StringBuilder();
         htmlBuilder.append("<html><body><h1>Directory Listing:</h1><ul>");

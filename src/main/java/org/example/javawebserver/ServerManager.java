@@ -6,10 +6,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
+
+import static org.example.javawebserver.Logger.logFileDateFormat;
+import static org.example.javawebserver.Logger.logFileName;
 
 public class ServerManager {
 
@@ -40,27 +40,35 @@ public class ServerManager {
             System.out.println("Server stopped");
         }
     }
-
-    private void logServerStarted() {
-        logServerEvent("Server started on port " + port);
-    }
-
-    private void logServerStopped() {
-        logServerEvent("Server stopped on port " + port);
-    }
-
+    // Digunakan ketika server dinyalakan atau dihentikan
     private void logServerEvent(String message) {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE-MMM-dd HH:mm:ss yyyy");
             String formattedDate = dateFormat.format(new Date());
             String logEntry = formattedDate + " | " + message + "\n";
 
-            Path logFilePath = Paths.get(logPath, "access.log");
+            Path logFilePath = Paths.get(logPath, logFileName);
             Files.createDirectories(logFilePath.getParent());
             // Append the log entry to the file, creating it if it doesn't exist
             Files.write(logFilePath, logEntry.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (Exception e) {
             System.out.println("Error logging server event: " + e.getMessage());
         }
+    }
+    //get Log name
+    private String getLogFileName() throws IOException {
+        Path logDir = Paths.get(logPath);
+        Files.createDirectories(logDir);
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(logDir, "*.log")) {
+            for (Path entry : stream) {
+                return entry.getFileName().toString();
+            }
+        }
+        String timestamp = logFileDateFormat.format(new Date());
+        String newLogFileName = "log_" + timestamp + ".log";
+        Path newLogFilePath = logDir.resolve(newLogFileName);
+        Files.createFile(newLogFilePath);
+        return newLogFileName;
     }
 }

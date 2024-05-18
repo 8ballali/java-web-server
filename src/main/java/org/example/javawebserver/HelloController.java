@@ -19,6 +19,7 @@ public class HelloController {
     protected static String LOG_PATH;
     protected static String WEB_DIR;
     protected static int PORT;
+    private static String logFileName;
 
     private ServerManager server;
 
@@ -61,16 +62,17 @@ public class HelloController {
     public void logButtonOnAction(ActionEvent event) {
         chooseDirectory("Choose Log Directory", logTextField);
     }
-
+    //first method executed when app executed
     @FXML
     public void initialize() {
         loadConfig();
+        logFileName = Logger.logFileName; // Use the same log file name determined by Logger
         server = new ServerManager(PORT, WEB_DIR, LOG_PATH);
         portTextField.setText(String.valueOf(PORT));
         dirTextField.setText(WEB_DIR);
         logTextField.setText(LOG_PATH);
     }
-
+    //to start
     @FXML
     public void startButtonOnAction(ActionEvent event) {
         try {
@@ -82,6 +84,7 @@ public class HelloController {
             WEB_DIR = dirTextField.getText();
             LOG_PATH = logTextField.getText();
 
+            logFileName = Logger.logFileName; // Update log file name
             server = new ServerManager(PORT, WEB_DIR, LOG_PATH);
             server.startServer();
             saveConfig();
@@ -99,7 +102,7 @@ public class HelloController {
             e.printStackTrace();
         }
     }
-
+    //to stop
     @FXML
     public void stopButtonOnAction(ActionEvent event) {
         if (server != null) {
@@ -109,7 +112,7 @@ public class HelloController {
         serviceLabel.setStyle("-fx-text-fill: red");
         logTextArea.setStyle("-fx-text-fill: white");
     }
-
+    //to prevent blinked screen when updating, use thread to automatically update
     private void watchLogFile() {
         try {
             Path logDir = Paths.get(LOG_PATH);
@@ -129,7 +132,7 @@ public class HelloController {
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                             Path modifiedFilePath = (Path) event.context();
-                            if (modifiedFilePath.endsWith("access.log")) {
+                            if (modifiedFilePath.endsWith(logFileName)) {
                                 updateLogTextArea();
                             }
                         }
@@ -146,9 +149,9 @@ public class HelloController {
             e.printStackTrace();
         }
     }
-
+    //to update Text area
     private void updateLogTextArea() {
-        Path logFilePath = Paths.get(LOG_PATH, "access.log");
+        Path logFilePath = Paths.get(LOG_PATH, logFileName);
 
         try {
             String logContent = Files.readString(logFilePath);
@@ -159,7 +162,7 @@ public class HelloController {
     }
 
     private void readLogFile() {
-        Path logFilePath = Paths.get(LOG_PATH, "access.log");
+        Path logFilePath = Paths.get(LOG_PATH, logFileName);
 
         try {
             if (Files.exists(logFilePath)) {
@@ -182,6 +185,7 @@ public class HelloController {
             textField.setText(selectedDirectory.getAbsolutePath());
         }
     }
+    //function to select .html file or choose directory
     private void chooseFileOrDirectory(String title, TextField textField) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(title);
