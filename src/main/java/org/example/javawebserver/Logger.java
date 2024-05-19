@@ -9,10 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.net.InetAddress;
 
 public class Logger {
     public static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
-    public static final SimpleDateFormat logFileDateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+    public static final SimpleDateFormat logFileDateFormat = new SimpleDateFormat("yyyy-MM-dd_HHmmss");
     public static String logFileName;
 
     static {
@@ -35,14 +36,17 @@ public class Logger {
         }
 
         String timestamp = logFileDateFormat.format(new Date());
-        String newLogFileName = "log_" + timestamp + ".log";
+
+        //Format penamaan file baru
+        String newLogFileName =timestamp + ".log";
         Path newLogFilePath = logDir.resolve(newLogFileName);
         Files.createFile(newLogFilePath);
         return newLogFileName;
     }
     //catat log
     public static void logActivity(HttpExchange exchange) throws IOException {
-        String clientIP = exchange.getRemoteAddress().getAddress().getHostAddress();
+        InetAddress IP = InetAddress.getLocalHost();
+
         String requestMethod = exchange.getRequestMethod();
         String requestPath = exchange.getRequestURI().getPath();
 
@@ -53,9 +57,9 @@ public class Logger {
         Files.createDirectories(logFilePath.getParent());
 
         if (!Files.exists(Paths.get(HelloController.WEB_DIR, requestPath))) {
-            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + clientIP + " | 404 Not Found\n";
+            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + IP.getHostAddress() + " | 404 Not Found\n";
         } else {
-            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + clientIP + "\n";
+            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + IP.getHostAddress() + "\n";
         }
 
         Files.write(logFilePath, logEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
