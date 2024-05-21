@@ -3,29 +3,26 @@ package org.example.javawebserver;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.InetAddress;
+import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.net.InetAddress;
 
 public class Logger {
-    public static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
-    public static final SimpleDateFormat logFileDateFormat = new SimpleDateFormat("yyyy-MM-dd_HHmmss");
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
+    public static final SimpleDateFormat LOG_FILE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HHmmss");
     public static String logFileName;
 
     static {
         try {
-            logFileName = getLogFileName();
+            logFileName = initializeLogFileName();
         } catch (IOException e) {
             e.printStackTrace();
             logFileName = "log_error.log"; // Fallback log file name
         }
     }
-    //get log name
-    private static String getLogFileName() throws IOException {
+    //Menentukan nama file lognya
+    private static String initializeLogFileName() throws IOException {
         Path logDir = Paths.get(HelloController.LOG_PATH);
         Files.createDirectories(logDir);
 
@@ -35,46 +32,43 @@ public class Logger {
             }
         }
 
-        String timestamp = logFileDateFormat.format(new Date());
-
-        //Format penamaan file baru
-        String newLogFileName =timestamp + ".log";
-        Path newLogFilePath = logDir.resolve(newLogFileName);
-        Files.createFile(newLogFilePath);
+        String timestamp = LOG_FILE_DATE_FORMAT.format(new Date());
+        String newLogFileName = timestamp + ".log";
+        Files.createFile(logDir.resolve(newLogFileName));
         return newLogFileName;
     }
-    //catat log
+    //nambahin lognya
     public static void logActivity(HttpExchange exchange) throws IOException {
-        InetAddress IP = InetAddress.getLocalHost();
-
+        InetAddress clientIP = InetAddress.getLocalHost();
         String requestMethod = exchange.getRequestMethod();
         String requestPath = exchange.getRequestURI().getPath();
+        String formattedDate = DATE_FORMAT.format(new Date());
 
-        String formattedDate = dateFormat.format(new Date());
+        String logEntry = formatLogEntry(formattedDate, requestMethod, requestPath, clientIP, !Files.exists(Paths.get(HelloController.WEB_DIR, requestPath)));
+        appendLog(logEntry);
+    }
+    //kalau error
+    public static void logServerEvent(String message) {
+        String formattedDate = DATE_FORMAT.format(new Date());
+        String logEntry = String.format("%s | %s\n", formattedDate, message);
+        try {
+            appendLog(logEntry);
+        } catch (IOException e) {
+            System.err.println("Error logging server event: " + e.getMessage());
+        }
+    }
+    //formatting
+    private static String formatLogEntry(String date, String method, String path, InetAddress ip, boolean notFound) {
+        if (notFound) {
+            return String.format("%s | %s | localhost:%d%s | %s | 404 Not Found\n", date, method, HelloController.PORT, path, ip.getHostAddress());
+        } else {
+            return String.format("%s | %s | localhost:%d%s | %s\n", date, method, HelloController.PORT, path, ip.getHostAddress());
+        }
+    }
 
-        String logEntry;
+    private static void appendLog(String logEntry) throws IOException {
         Path logFilePath = Paths.get(HelloController.LOG_PATH, logFileName);
         Files.createDirectories(logFilePath.getParent());
-
-        if (!Files.exists(Paths.get(HelloController.WEB_DIR, requestPath))) {
-            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + IP.getHostAddress() + " | 404 Not Found\n";
-        } else {
-            logEntry = formattedDate + " | " + requestMethod + " | localhost:" + HelloController.PORT + requestPath + " | " + IP.getHostAddress() + "\n";
-        }
-
-        Files.write(logFilePath, logEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-    }
-    // to specify message when stop and start
-    public static void logServerEvent(String message) {
-        try {
-            String formattedDate = dateFormat.format(new Date());
-            String logEntry = String.format("%s | %s\n", formattedDate, message);
-
-            Path logFilePath = Paths.get(HelloController.LOG_PATH, logFileName);
-            Files.createDirectories(logFilePath.getParent());
-            Files.write(logFilePath, logEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            System.out.println("Error logging server event: " + e.getMessage());
-        }
+        Files.write(logFilePath, logEntry.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 }
